@@ -1,0 +1,14 @@
+# API
+api/.env
+api/__pycache__/
+api/*.log
+api/uvicorn*.log
+
+# App
+app/node_modules/
+app/.expo/
+app/dist/
+
+# General
+*.pyc
+.DS_Store

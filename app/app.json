@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Consultor Bonos",
+    "slug": "consultor-bonos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.gyc.consultorbonos"
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.0.0.12:8000"
+    }
+  }
+}
