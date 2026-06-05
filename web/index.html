@@ -154,6 +154,53 @@
     .refresh-icon { display: inline-block; }
     #last-updated { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
 
+    /* ── Search bar ── */
+    .search-wrap {
+      flex: 1;
+      max-width: 260px;
+      position: relative;
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-faint);
+      pointer-events: none;
+    }
+    #search-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 32px 10px 34px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    #search-input::placeholder { color: var(--text-faint); }
+    #search-input:focus { border-color: var(--orange); }
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-faint);
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px;
+      display: none;
+    }
+    .search-clear.visible { display: block; }
+    .search-clear:hover { color: var(--text-muted); }
+
     /* ── Filter tabs ── */
     #filter-tabs {
       max-width: 1400px;
@@ -284,7 +331,8 @@
     @media (max-width: 600px) {
       #header { padding: 14px 16px 0; }
       .header-top { flex-wrap: wrap; gap: 12px; padding-bottom: 12px; }
-      .dropdown-wrap { max-width: 100%; order: 3; flex-basis: 100%; }
+      .dropdown-wrap { max-width: 100%; order: 3; flex-basis: calc(50% - 6px); }
+      .search-wrap   { max-width: 100%; order: 4; flex-basis: calc(50% - 6px); }
       #last-updated { display: none; }
       #content { padding: 14px 12px 40px; }
       #stats-bar { padding: 8px 16px; }
@@ -312,6 +360,13 @@
           <span class="dropdown-arrow">▾</span>
         </button>
         <div id="dd-popover"></div>
+      </div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" type="text" placeholder="Buscar orden…" autocomplete="off" />
+        <button class="search-clear" id="search-clear" title="Limpiar">✕</button>
       </div>
 
       <div class="header-right">
@@ -371,11 +426,13 @@ const ESTADO = {
 let matriculas       = [];
 let selectedMat      = null;
 let selectedFilter   = '1';      // default: Activos
+let searchQuery      = '';
 let loadingMats      = true;
 let loadingBonos     = false;
 let hasContent       = false;
 let autoRefreshTimer = null;
 let counts           = { '0': null, '1': null, 'all': null };
+let lastBonos        = [];
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const $inner        = document.getElementById('content-inner');
@@ -390,6 +447,8 @@ const $refreshBtn   = document.getElementById('refresh-btn');
 const $lastUpdated  = document.getElementById('last-updated');
 const $loadingBar   = document.getElementById('loading-bar');
 const $tabs         = document.querySelectorAll('.tab');
+const $searchInput  = document.getElementById('search-input');
+const $searchClear  = document.getElementById('search-clear');
 
 const isMobile = () => window.innerWidth < 600;
 
@@ -445,7 +504,8 @@ async function fetchBonos() {
       'all': (dAll.bonos ?? []).length,
     };
     updateTabBadges();
-    renderContent({ state: 'ok', bonos: dMain.bonos ?? [] });
+    lastBonos = dMain.bonos ?? [];
+    renderContent({ state: 'ok', bonos: lastBonos });
     hasContent = true;
     updateLastUpdated();
   } catch {
@@ -512,6 +572,15 @@ function renderDropdownValue() {
   }
 }
 
+function applySearch() {
+  if (!lastBonos.length) return;
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? lastBonos.filter(b => String(b.IdOrden).toLowerCase().includes(q) || String(b.IdBono).toLowerCase().includes(q))
+    : lastBonos;
+  renderContent({ state: 'ok', bonos: filtered });
+}
+
 function renderContent({ state, bonos }) {
   $statsBar.classList.remove('visible');
 
@@ -543,9 +612,10 @@ function renderContent({ state, bonos }) {
 
   // Stats
   $statsBar.classList.add('visible');
-  const tabLabel  = { '1': 'activos', '0': 'en espera', 'all': 'en total' };
-  const machine   = selectedMat ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}` : '';
-  $statsText.innerHTML = `<span class="stats-count">${bonos.length}</span> ${bonos.length === 1 ? 'bono' : 'bonos'} ${tabLabel[selectedFilter] || ''}${machine}`;
+  const tabLabel = { '1': 'activos', '0': 'en espera', 'all': 'en total' };
+  const machine  = selectedMat ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}` : '';
+  const searchSuffix = searchQuery.trim() ? ` · orden "${searchQuery.trim()}"` : '';
+  $statsText.innerHTML = `<span class="stats-count">${bonos.length}</span> ${bonos.length === 1 ? 'bono' : 'bonos'} ${tabLabel[selectedFilter] || ''}${machine}${searchSuffix}`;
 
   // Grid
   const grid = document.createElement('div');
@@ -662,6 +732,20 @@ $tabs.forEach(tab => {
     hasContent = false;
     fetchBonos();
   });
+});
+
+$searchInput.addEventListener('input', () => {
+  searchQuery = $searchInput.value;
+  $searchClear.classList.toggle('visible', searchQuery.length > 0);
+  applySearch();
+});
+
+$searchClear.addEventListener('click', () => {
+  $searchInput.value = '';
+  searchQuery = '';
+  $searchClear.classList.remove('visible');
+  $searchInput.focus();
+  applySearch();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
