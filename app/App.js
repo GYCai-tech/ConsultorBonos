@@ -23,11 +23,9 @@ const ESTADO_CONFIG = {
   3: { label: 'Bloqueado',  color: '#dc2626', bg: '#fee2e2', dot: '#ef4444' },
 };
 
-// estadoBono filtra ob.IdEstado; estadoOrden filtra o.IdEstado
-// Bloqueadas = órdenes con o.IdEstado=3 (sin filtro de bono)
 const TABS = [
-  { key: 'espera',    label: 'En espera',  estadoOrden: 1, estadoBono: '0'  },
-  { key: 'bloqueado', label: 'Bloqueadas', estadoOrden: 3, estadoBono: null },
+  { key: 'espera',    label: 'En espera',  estadoOrden: 1, estadoBono: '0' },
+  { key: 'bloqueado', label: 'Bloqueadas', estadoOrden: 1, estadoBono: '3' },
   { key: 'todas',     label: 'Todas',      estadoOrden: 1, estadoBono: null },
 ];
 
