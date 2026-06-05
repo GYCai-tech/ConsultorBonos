@@ -426,6 +426,7 @@ const ESTADO = {
   0: { label: 'En espera',  color: '#d97706', bg: '#fef3c7', dot: '#f59e0b' },
   1: { label: 'Activo',     color: '#059669', bg: '#d1fae5', dot: '#10b981' },
   2: { label: 'Finalizado', color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' },
+  3: { label: 'Bloqueado',  color: '#dc2626', bg: '#fee2e2', dot: '#ef4444' },
 };
 
 // filter: '1' | '0' | 'all' | 'blocked'
@@ -531,8 +532,7 @@ async function fetchBonos() {
 
 function buildUrl(filter) {
   if (filter === 'blocked') {
-    // estado_orden=3 (bloqueada), sin filtro de estado_bono → todos los bonos
-    let url = `${API}/bonos?estado_orden=3`;
+    let url = `${API}/bonos?estado_orden=1&estado_bono=3`;
     if (selectedMat) url += `&matricula=${encodeURIComponent(selectedMat)}`;
     return url;
   }
