@@ -1,0 +1,16 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull y reconstruir contenedor
+        working-directory: /home/goyco/apps/ConsultorBonosWeb
+        run: |
+          git pull origin main
+          docker compose up -d --build
