@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consultor de Bonos · GYC</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:        #f97316;
+      --orange-light:  #fff7ed;
+      --orange-border: #fed7aa;
+      --bg:            #f8fafc;
+      --white:         #ffffff;
+      --text:          #0f172a;
+      --text-mid:      #1e293b;
+      --text-muted:    #64748b;
+      --text-faint:    #94a3b8;
+      --border:        #e2e8f0;
+      --border-light:  #f1f5f9;
+      --radius-card:   16px;
+      --radius-sm:     8px;
+      --shadow-card:   0 2px 8px rgba(15,23,42,.06);
+      --max-w:         480px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout shell ── */
+    #app {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    /* ── Header ── */
+    #header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      letter-spacing: 2px;
+      margin-bottom: 3px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    #refresh-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--orange-light);
+      border: 1.5px solid var(--orange-border);
+      color: var(--orange);
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color .15s, background .15s, transform .2s;
+      flex-shrink: 0;
+    }
+    #refresh-btn:hover { border-color: var(--orange); background: #ffedd5; }
+    #refresh-btn:active { transform: scale(.92); }
+    #refresh-btn.spinning .refresh-icon { animation: spin .6s linear infinite; }
+    #refresh-btn.disabled { opacity: .5; pointer-events: none; }
+    .refresh-icon { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Dropdown ── */
+    #dropdown-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: border-color .15s;
+      text-align: left;
+    }
+    #dropdown-btn:hover { border-color: #cbd5e1; }
+    #dropdown-btn.open { border-color: var(--orange); }
+    .dropdown-inner { flex: 1; min-width: 0; }
+    .dropdown-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-faint);
+      letter-spacing: 1.5px;
+      margin-bottom: 2px;
+    }
+    .dropdown-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dropdown-arrow {
+      font-size: 18px;
+      color: var(--text-faint);
+      margin-left: 8px;
+      transition: transform .2s;
+      flex-shrink: 0;
+    }
+    #dropdown-btn.open .dropdown-arrow { transform: rotate(180deg); }
+
+    /* ── Dropdown mini-spinner ── */
+    .dd-spinner {
+      width: 18px; height: 18px;
+      border: 2px solid #fed7aa;
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+
+    /* ── Overlay / Sheet ── */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #overlay.visible { display: flex; }
+    #overlay.fade-in { animation: fadeIn .15s ease; }
+    #overlay.fade-out { animation: fadeOut .15s ease forwards; }
+    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+    #sheet {
+      background: var(--white);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      width: 100%;
+      max-width: var(--max-w);
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 24px;
+      transform: translateY(0);
+    }
+    #overlay.fade-in  #sheet { animation: slideUp .2s ease; }
+    #overlay.fade-out #sheet { animation: slideDown .15s ease forwards; }
+    @keyframes slideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes slideDown { from { transform: translateY(0); }    to { transform: translateY(100%); } }
+
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 12px auto 16px;
+      flex-shrink: 0;
+    }
+    .sheet-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      text-align: center;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    #options-list {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: background .1s;
+    }
+    .option:hover { background: #fafafa; }
+    .option.active { background: var(--orange-light); }
+    .option-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .option-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--orange);
+      flex-shrink: 0;
+    }
+    .option-text { min-width: 0; }
+    .option-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-mid);
+    }
+    .option.active .option-name {
+      font-weight: 700;
+      color: var(--orange);
+    }
+    .option-sub {
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 1px;
+    }
+    .option-check {
+      font-size: 16px;
+      color: var(--orange);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    /* ── Stats bar ── */
+    #stats-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border-light);
+    }
+    #stats-bar.visible { display: flex; }
+    .stats-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+      flex-shrink: 0;
+    }
+    .stats-text { font-size: 13px; color: var(--text-muted); }
+    .stats-count { font-weight: 700; color: var(--orange); }
+
+    /* ── Content area ── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 40px;
+    }
+
+    /* ── Cards ── */
+    .cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: var(--white);
+      border-radius: var(--radius-card);
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-card);
+      animation: cardIn .2s ease both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .card-ids { text-align: center; }
+    .orden-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-faint);
+      letter-spacing: 1.5px;
+      margin-bottom: 2px;
+    }
+    .orden-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .bono-value { color: var(--text-muted); font-weight: 600; }
+    .card-divider {
+      width: 1px; height: 30px;
+      background: var(--border);
+    }
+    .spacer { flex: 1; }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .badge-text {
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .divider-h {
+      height: 1px;
+      background: var(--border-light);
+      margin-bottom: 14px;
+    }
+    .field-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-faint);
+      letter-spacing: 1.5px;
+      margin-bottom: 3px;
+    }
+    .field-label + .field-label,
+    .field-value + .field-label { margin-top: 12px; }
+    .field-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-mid);
+      line-height: 1.4;
+    }
+    .field-sub {
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 2px;
+    }
+    .card-footer {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-light);
+    }
+    .chip {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      min-width: 0;
+    }
+    .chip-icon { font-size: 11px; flex-shrink: 0; }
+    .chip-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── States (loading / empty / error) ── */
+    .state-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 40px 80px;
+      text-align: center;
+    }
+    .state-icon { font-size: 48px; margin-bottom: 16px; }
+    .state-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .state-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .retry-btn {
+      padding: 12px 28px;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .retry-btn:hover  { opacity: .9; }
+    .retry-btn:active { transform: scale(.97); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #fed7aa;
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin-bottom: 14px;
+    }
+    .loading-text { font-size: 13px; color: var(--text-faint); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div id="header">
+    <div class="header-top">
+      <div>
+        <div class="eyebrow">GYC · PRODUCCIÓN</div>
+        <div class="title">Consultor de Bonos</div>
+      </div>
+      <button id="refresh-btn" title="Actualizar">
+        <span class="refresh-icon">↺</span>
+      </button>
+    </div>
+
+    <!-- Dropdown trigger -->
+    <button id="dropdown-btn">
+      <div class="dropdown-inner">
+        <div class="dropdown-label">MÁQUINA</div>
+        <div class="dropdown-value" id="dropdown-value">Todas las máquinas</div>
+      </div>
+      <span class="dropdown-arrow">▾</span>
+    </button>
+  </div>
+
+  <!-- Stats bar -->
+  <div id="stats-bar">
+    <div class="stats-dot"></div>
+    <span class="stats-text" id="stats-text"></span>
+  </div>
+
+  <!-- Content -->
+  <div id="content"></div>
+
+</div>
+
+<!-- Overlay / Bottom sheet -->
+<div id="overlay">
+  <div id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">SELECCIONAR MÁQUINA</div>
+    <div id="options-list"></div>
+  </div>
+</div>
+
+<script>
+const API = 'http://10.0.0.12:8002';
+
+const ESTADO = {
+  0: { label: 'En espera',  color: '#d97706', bg: '#fef3c7', dot: '#f59e0b' },
+  1: { label: 'Activo',     color: '#059669', bg: '#d1fae5', dot: '#10b981' },
+  2: { label: 'Finalizado', color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' },
+};
+
+let matriculas       = [];
+let selectedMat      = null;   // null = todas
+let loadingMats      = true;
+let loadingBonos     = false;
+let autoRefreshTimer = null;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const $content      = document.getElementById('content');
+const $statsBar     = document.getElementById('stats-bar');
+const $statsText    = document.getElementById('stats-text');
+const $dropdownBtn  = document.getElementById('dropdown-btn');
+const $dropdownVal  = document.getElementById('dropdown-value');
+const $dropdownArrow= $dropdownBtn.querySelector('.dropdown-arrow');
+const $overlay      = document.getElementById('overlay');
+const $optionsList  = document.getElementById('options-list');
+const $refreshBtn   = document.getElementById('refresh-btn');
+
+// ── Fetch ─────────────────────────────────────────────────────────────────────
+async function fetchMatriculas() {
+  loadingMats = true;
+  setDropdownLoading(true);
+  try {
+    const r = await fetch(`${API}/matriculas`);
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    matriculas = d.matriculas ?? [];
+  } catch {
+    /* keep empty — error shown by bonos state */
+  } finally {
+    loadingMats = false;
+    setDropdownLoading(false);
+    renderDropdownValue();
+  }
+}
+
+async function fetchBonos() {
+  if (loadingBonos) return;
+  loadingBonos = true;
+  setRefreshSpinning(true);
+  renderContent({ state: 'loading' });
+  try {
+    let url = `${API}/bonos?estado_bono=0&estado_orden=1`;
+    if (selectedMat) url += `&matricula=${encodeURIComponent(selectedMat)}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    renderContent({ state: 'ok', bonos: d.bonos ?? [] });
+  } catch {
+    renderContent({ state: 'error' });
+  } finally {
+    loadingBonos = false;
+    setRefreshSpinning(false);
+    scheduleAutoRefresh();
+  }
+}
+
+// ── Auto-refresh ──────────────────────────────────────────────────────────────
+function scheduleAutoRefresh() {
+  clearTimeout(autoRefreshTimer);
+  autoRefreshTimer = setTimeout(fetchBonos, 60_000);
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────────
+function setRefreshSpinning(on) {
+  $refreshBtn.classList.toggle('spinning', on);
+  $refreshBtn.classList.toggle('disabled', on);
+}
+
+function setDropdownLoading(on) {
+  const inner = $dropdownBtn.querySelector('.dropdown-inner');
+  let spinner = $dropdownBtn.querySelector('.dd-spinner');
+  if (on && !spinner) {
+    spinner = document.createElement('div');
+    spinner.className = 'dd-spinner';
+    $dropdownBtn.insertBefore(spinner, $dropdownBtn.querySelector('.dropdown-arrow'));
+  } else if (!on && spinner) {
+    spinner.remove();
+  }
+}
+
+function renderDropdownValue() {
+  if (selectedMat) {
+    const m = matriculas.find(x => x.Matricula === selectedMat);
+    $dropdownVal.textContent = m?.Descrip || selectedMat;
+  } else {
+    $dropdownVal.textContent = 'Todas las máquinas';
+  }
+}
+
+function renderContent({ state, bonos }) {
+  $statsBar.classList.remove('visible');
+
+  if (state === 'loading') {
+    $content.innerHTML = `
+      <div class="state-view">
+        <div class="spinner"></div>
+        <span class="loading-text">Cargando bonos…</span>
+      </div>`;
+    return;
+  }
+
+  if (state === 'error') {
+    $content.innerHTML = `
+      <div class="state-view">
+        <div class="state-icon">⚡</div>
+        <div class="state-title">Sin conexión</div>
+        <div class="state-text">No se puede alcanzar la red de empresa</div>
+        <button class="retry-btn" id="retry-btn">Reintentar</button>
+      </div>`;
+    document.getElementById('retry-btn')?.addEventListener('click', () => {
+      fetchMatriculas();
+      fetchBonos();
+    });
+    return;
+  }
+
+  if (bonos.length === 0) {
+    $content.innerHTML = `
+      <div class="state-view">
+        <div class="state-icon">✓</div>
+        <div class="state-title">Todo al día</div>
+        <div class="state-text">No hay bonos en espera para la selección actual</div>
+      </div>`;
+    return;
+  }
+
+  // Stats bar
+  $statsBar.classList.add('visible');
+  const machine = selectedMat
+    ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}`
+    : '';
+  $statsText.innerHTML =
+    `<span class="stats-count">${bonos.length}</span> ` +
+    `${bonos.length === 1 ? 'bono en espera' : 'bonos en espera'}${machine}`;
+
+  // Cards
+  const list = document.createElement('div');
+  list.className = 'cards-list';
+  bonos.forEach((b, i) => {
+    const el = buildCard(b);
+    el.style.animationDelay = `${i * 40}ms`;
+    list.appendChild(el);
+  });
+  $content.innerHTML = '';
+  $content.appendChild(list);
+}
+
+function buildCard(b) {
+  const estado = ESTADO[b.estado_bono] ?? ESTADO[0];
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const hasSub = b.Matricula && b.descrip_matricula;
+
+  card.innerHTML = `
+    <div class="card-top">
+      <div class="card-ids">
+        <div class="orden-label">ORDEN</div>
+        <div class="orden-value">#${b.IdOrden}</div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-ids">
+        <div class="orden-label">BONO</div>
+        <div class="orden-value bono-value">${b.IdBono}</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="badge" style="background:${estado.bg}">
+        <div class="badge-dot" style="background:${estado.dot}"></div>
+        <span class="badge-text" style="color:${estado.color}">${estado.label}</span>
+      </div>
+    </div>
+    <div class="divider-h"></div>
+    <div class="field-label">ARTÍCULO</div>
+    <div class="field-value">${esc(b.descrip_articulo || '—')}</div>
+    <div class="field-label" style="margin-top:12px">MÁQUINA</div>
+    <div class="field-value">${esc(b.descrip_matricula || b.Matricula || '—')}</div>
+    ${hasSub ? `<div class="field-sub">${esc(b.Matricula)}</div>` : ''}
+    <div class="card-footer">
+      <div class="chip"><span class="chip-icon">📍</span><span class="chip-text">${esc(b.Area || '—')}</span></div>
+      <div class="chip"><span class="chip-icon">🏢</span><span class="chip-text">${esc(b.IdCliente || '—')}</span></div>
+      <div class="chip"><span class="chip-icon">👤</span><span class="chip-text">${esc(b.Usuario || '—')}</span></div>
+    </div>`;
+  return card;
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── Dropdown sheet ────────────────────────────────────────────────────────────
+function buildOptionsList() {
+  $optionsList.innerHTML = '';
+
+  const allOpt = makeOption('Todas las máquinas', null, selectedMat === null);
+  $optionsList.appendChild(allOpt);
+
+  matriculas.forEach(m => {
+    $optionsList.appendChild(
+      makeOption(m.Descrip || m.Matricula, m.Matricula, selectedMat === m.Matricula, m.Matricula)
+    );
+  });
+}
+
+function makeOption(label, value, active, sub) {
+  const el = document.createElement('div');
+  el.className = 'option' + (active ? ' active' : '');
+  el.innerHTML = `
+    <div class="option-left">
+      ${active ? '<div class="option-dot"></div>' : ''}
+      <div class="option-text">
+        <div class="option-name">${esc(label)}</div>
+        ${sub ? `<div class="option-sub">${esc(sub)}</div>` : ''}
+      </div>
+    </div>
+    ${active ? '<span class="option-check">✓</span>' : ''}`;
+  el.addEventListener('click', () => {
+    selectedMat = value;
+    renderDropdownValue();
+    closeSheet();
+    fetchBonos();
+  });
+  return el;
+}
+
+function openSheet() {
+  if (loadingMats) return;
+  buildOptionsList();
+  $overlay.classList.remove('fade-out');
+  $overlay.classList.add('visible', 'fade-in');
+  $dropdownBtn.classList.add('open');
+}
+
+function closeSheet() {
+  $overlay.classList.remove('fade-in');
+  $overlay.classList.add('fade-out');
+  $dropdownBtn.classList.remove('open');
+  setTimeout(() => $overlay.classList.remove('visible', 'fade-out'), 150);
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+$dropdownBtn.addEventListener('click', () => {
+  $overlay.classList.contains('visible') ? closeSheet() : openSheet();
+});
+
+$overlay.addEventListener('click', e => {
+  if (e.target === $overlay) closeSheet();
+});
+
+$refreshBtn.addEventListener('click', () => fetchBonos());
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $overlay.classList.contains('visible')) closeSheet();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  await Promise.all([fetchMatriculas(), fetchBonos()]);
+})();
+</script>
+</body>
+</html>
