@@ -22,7 +22,6 @@
       --radius-card:   16px;
       --radius-sm:     8px;
       --shadow-card:   0 2px 8px rgba(15,23,42,.06);
-      --max-w:         480px;
     }
 
     html, body {
@@ -33,67 +32,47 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Layout shell ── */
-    #app {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg);
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Top loading bar ── */
+    #loading-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: var(--orange);
+      z-index: 200;
+      width: 0%;
+      opacity: 0;
+      transition: width .3s ease, opacity .3s ease;
     }
+    #loading-bar.active  { opacity: 1; animation: loadBar 1.4s ease infinite; }
+    #loading-bar.done    { width: 100% !important; opacity: 0; animation: none; transition: width .15s ease, opacity .3s ease .1s; }
+    @keyframes loadBar   { 0%{width:0%;opacity:1} 65%{width:85%} 100%{width:95%} }
+    @keyframes spin      { to { transform: rotate(360deg); } }
 
     /* ── Header ── */
     #header {
       background: var(--white);
       border-bottom: 1px solid var(--border);
-      padding: 20px 20px 16px;
+      padding: 16px 24px 0;
       position: sticky;
       top: 0;
       z-index: 10;
     }
     .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .eyebrow {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--orange);
-      letter-spacing: 2px;
-      margin-bottom: 3px;
-    }
-    .title {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.3px;
-    }
-    #refresh-btn {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: var(--orange-light);
-      border: 1.5px solid var(--orange-border);
-      color: var(--orange);
-      font-size: 22px;
-      cursor: pointer;
+      max-width: 1400px;
+      margin: 0 auto;
       display: flex;
       align-items: center;
-      justify-content: center;
-      transition: border-color .15s, background .15s, transform .2s;
-      flex-shrink: 0;
+      gap: 20px;
+      padding-bottom: 14px;
     }
-    #refresh-btn:hover { border-color: var(--orange); background: #ffedd5; }
-    #refresh-btn:active { transform: scale(.92); }
-    #refresh-btn.spinning .refresh-icon { animation: spin .6s linear infinite; }
-    #refresh-btn.disabled { opacity: .5; pointer-events: none; }
-    .refresh-icon { display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .header-brand { flex-shrink: 0; }
+    .eyebrow { font-size: 10px; font-weight: 700; color: var(--orange); letter-spacing: 2px; margin-bottom: 2px; }
+    .title   { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; white-space: nowrap; }
 
     /* ── Dropdown ── */
+    .dropdown-wrap { flex: 1; max-width: 340px; position: relative; }
     #dropdown-btn {
       width: 100%;
       display: flex;
@@ -101,179 +80,164 @@
       background: var(--bg);
       border: 1.5px solid var(--border);
       border-radius: 12px;
-      padding: 12px 16px;
+      padding: 10px 14px;
       cursor: pointer;
       transition: border-color .15s;
       text-align: left;
     }
     #dropdown-btn:hover { border-color: #cbd5e1; }
-    #dropdown-btn.open { border-color: var(--orange); }
+    #dropdown-btn.open  { border-color: var(--orange); }
     .dropdown-inner { flex: 1; min-width: 0; }
-    .dropdown-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-faint);
-      letter-spacing: 1.5px;
-      margin-bottom: 2px;
-    }
-    .dropdown-value {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .dropdown-arrow {
-      font-size: 18px;
-      color: var(--text-faint);
-      margin-left: 8px;
-      transition: transform .2s;
-      flex-shrink: 0;
-    }
+    .dropdown-label { font-size: 9px; font-weight: 700; color: var(--text-faint); letter-spacing: 1.5px; margin-bottom: 1px; }
+    .dropdown-value { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dropdown-arrow { font-size: 16px; color: var(--text-faint); margin-left: 8px; transition: transform .2s; flex-shrink: 0; }
     #dropdown-btn.open .dropdown-arrow { transform: rotate(180deg); }
 
-    /* ── Dropdown mini-spinner ── */
-    .dd-spinner {
-      width: 18px; height: 18px;
-      border: 2px solid #fed7aa;
-      border-top-color: var(--orange);
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
-    }
+    .dd-spinner { width: 16px; height: 16px; border: 2px solid #fed7aa; border-top-color: var(--orange); border-radius: 50%; animation: spin .6s linear infinite; margin-right: 4px; }
 
-    /* ── Overlay / Sheet ── */
-    #overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15,23,42,.45);
-      z-index: 100;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-    }
-    #overlay.visible { display: flex; }
-    #overlay.fade-in { animation: fadeIn .15s ease; }
-    #overlay.fade-out { animation: fadeOut .15s ease forwards; }
-    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-    #sheet {
-      background: var(--white);
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
+    /* desktop popover */
+    #dd-popover {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
       width: 100%;
-      max-width: var(--max-w);
-      max-height: 70vh;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: 24px;
-      transform: translateY(0);
-    }
-    #overlay.fade-in  #sheet { animation: slideUp .2s ease; }
-    #overlay.fade-out #sheet { animation: slideDown .15s ease forwards; }
-    @keyframes slideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    @keyframes slideDown { from { transform: translateY(0); }    to { transform: translateY(100%); } }
-
-    .sheet-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 12px auto 16px;
-      flex-shrink: 0;
-    }
-    .sheet-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-faint);
-      letter-spacing: 1px;
-      text-align: center;
-      margin-bottom: 8px;
-      flex-shrink: 0;
-    }
-    #options-list {
+      min-width: 280px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.12);
+      z-index: 50;
+      max-height: 320px;
       overflow-y: auto;
-      flex: 1;
+      display: none;
     }
+    #dd-popover.open { display: block; animation: popIn .15s ease; }
+    @keyframes popIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Options ── */
     .option {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border-light);
       cursor: pointer;
       transition: background .1s;
     }
-    .option:hover { background: #fafafa; }
+    .option:last-child { border-bottom: none; }
+    .option:hover  { background: #fafafa; }
     .option.active { background: var(--orange-light); }
-    .option-left {
+    .option-left   { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .option-dot    { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+    .option-text   { min-width: 0; }
+    .option-name   { font-size: 14px; font-weight: 500; color: var(--text-mid); }
+    .option.active .option-name { font-weight: 700; color: var(--orange); }
+    .option-sub    { font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+    .option-check  { font-size: 14px; color: var(--orange); font-weight: 700; flex-shrink: 0; margin-left: 8px; }
+
+    /* ── Header right ── */
+    .header-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+    #refresh-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--orange-light);
+      border: 1.5px solid var(--orange-border);
+      color: var(--orange);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, background .15s, transform .1s;
+      flex-shrink: 0;
+    }
+    #refresh-btn:hover  { border-color: var(--orange); background: #ffedd5; }
+    #refresh-btn:active { transform: scale(.92); }
+    #refresh-btn.spinning .refresh-icon { animation: spin .6s linear infinite; }
+    #refresh-btn.disabled { opacity: .5; pointer-events: none; }
+    .refresh-icon { display: inline-block; }
+    #last-updated { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+
+    /* ── Filter tabs ── */
+    #filter-tabs {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      gap: 2px;
+      border-top: 1px solid var(--border-light);
+    }
+    .tab {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex: 1;
-      min-width: 0;
-    }
-    .option-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--orange);
-      flex-shrink: 0;
-    }
-    .option-text { min-width: 0; }
-    .option-name {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text-mid);
-    }
-    .option.active .option-name {
-      font-weight: 700;
-      color: var(--orange);
-    }
-    .option-sub {
-      font-size: 11px;
+      gap: 7px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--text-faint);
-      margin-top: 1px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .15s, border-color .15s;
+      white-space: nowrap;
     }
-    .option-check {
-      font-size: 16px;
-      color: var(--orange);
+    .tab:hover { color: var(--text-muted); }
+    .tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .tab-badge {
+      font-size: 11px;
       font-weight: 700;
-      flex-shrink: 0;
-      margin-left: 8px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: var(--border-light);
+      color: var(--text-faint);
+      transition: background .15s, color .15s;
+      min-width: 22px;
+      text-align: center;
     }
+    .tab.active .tab-badge { background: var(--orange-light); color: var(--orange); }
 
     /* ── Stats bar ── */
-    #stats-bar {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 20px;
-      background: var(--white);
-      border-bottom: 1px solid var(--border-light);
-    }
+    #stats-bar { display: none; align-items: center; gap: 8px; padding: 8px 24px; background: var(--white); border-bottom: 1px solid var(--border-light); }
     #stats-bar.visible { display: flex; }
-    .stats-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--orange);
-      flex-shrink: 0;
-    }
-    .stats-text { font-size: 13px; color: var(--text-muted); }
+    .stats-inner { max-width: 1400px; margin: 0 auto; width: 100%; display: flex; align-items: center; gap: 8px; }
+    .stats-dot   { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+    .stats-text  { font-size: 13px; color: var(--text-muted); }
     .stats-count { font-weight: 700; color: var(--orange); }
 
-    /* ── Content area ── */
-    #content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 16px 40px;
+    /* ── Mobile overlay / sheet ── */
+    #overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 100;
+      display: none; align-items: flex-end; justify-content: center;
     }
+    #overlay.visible  { display: flex; }
+    #overlay.fade-in  { animation: fadeIn .15s ease; }
+    #overlay.fade-out { animation: fadeOut .15s ease forwards; }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    @keyframes fadeOut { from{opacity:1} to{opacity:0} }
+    #sheet {
+      background: var(--white);
+      border-top-left-radius: 20px; border-top-right-radius: 20px;
+      width: 100%; max-width: 520px; max-height: 70vh;
+      display: flex; flex-direction: column;
+      padding-bottom: 24px;
+    }
+    #overlay.fade-in  #sheet { animation: slideUp .2s ease; }
+    #overlay.fade-out #sheet { animation: slideDown .15s ease forwards; }
+    @keyframes slideUp   { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    @keyframes slideDown { from{transform:translateY(0)} to{transform:translateY(100%)} }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 16px; flex-shrink: 0; }
+    .sheet-title  { font-size: 12px; font-weight: 700; color: var(--text-faint); letter-spacing: 1px; text-align: center; margin-bottom: 8px; flex-shrink: 0; }
+    #sheet-options { overflow-y: auto; flex: 1; }
 
-    /* ── Cards ── */
-    .cards-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    /* ── Content ── */
+    #content { flex: 1; padding: 20px 24px 48px; }
+    .content-inner { max-width: 1400px; margin: 0 auto; }
+
+    /* ── Cards grid ── */
+    .cards-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 640px)  { .cards-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (min-width: 1024px) { .cards-grid { grid-template-columns: repeat(3,1fr); } }
+    @media (min-width: 1400px) { .cards-grid { grid-template-columns: repeat(4,1fr); } }
+
     .card {
       background: var(--white);
       border-radius: var(--radius-card);
@@ -281,196 +245,116 @@
       border: 1px solid var(--border);
       box-shadow: var(--shadow-card);
       animation: cardIn .2s ease both;
+      display: flex; flex-direction: column;
     }
-    @keyframes cardIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .card-top {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .card-ids { text-align: center; }
-    .orden-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--text-faint);
-      letter-spacing: 1.5px;
-      margin-bottom: 2px;
-    }
-    .orden-value {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--text);
-    }
-    .bono-value { color: var(--text-muted); font-weight: 600; }
-    .card-divider {
-      width: 1px; height: 30px;
-      background: var(--border);
-    }
+    @keyframes cardIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .card-top   { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .card-ids   { text-align: center; }
+    .orden-label { font-size: 9px; font-weight: 700; color: var(--text-faint); letter-spacing: 1.5px; margin-bottom: 2px; }
+    .orden-value { font-size: 22px; font-weight: 800; color: var(--text); }
+    .bono-value  { color: var(--text-muted); font-weight: 600; }
+    .card-divider { width: 1px; height: 30px; background: var(--border); }
     .spacer { flex: 1; }
-    .badge {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 10px;
-      border-radius: 20px;
-    }
-    .badge-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-    .badge-text {
-      font-size: 11px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .divider-h {
-      height: 1px;
-      background: var(--border-light);
-      margin-bottom: 14px;
-    }
-    .field-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-faint);
-      letter-spacing: 1.5px;
-      margin-bottom: 3px;
-    }
-    .field-label + .field-label,
-    .field-value + .field-label { margin-top: 12px; }
-    .field-value {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-mid);
-      line-height: 1.4;
-    }
-    .field-sub {
-      font-size: 11px;
-      color: var(--text-faint);
-      margin-top: 2px;
-    }
-    .card-footer {
-      display: flex;
-      gap: 8px;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--border-light);
-    }
-    .chip {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--bg);
-      border-radius: var(--radius-sm);
-      padding: 6px 8px;
-      border: 1px solid var(--border);
-      min-width: 0;
-    }
+    .badge { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 20px; }
+    .badge-dot  { width: 6px; height: 6px; border-radius: 50%; }
+    .badge-text { font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .divider-h  { height: 1px; background: var(--border-light); margin-bottom: 14px; }
+    .field-label { font-size: 10px; font-weight: 700; color: var(--text-faint); letter-spacing: 1.5px; margin-bottom: 3px; }
+    .mt { margin-top: 12px; }
+    .field-value { font-size: 15px; font-weight: 600; color: var(--text-mid); line-height: 1.4; }
+    .field-sub   { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+    .card-body   { flex: 1; }
+    .card-footer { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light); }
+    .chip { flex: 1; display: flex; align-items: center; gap: 4px; background: var(--bg); border-radius: var(--radius-sm); padding: 6px 8px; border: 1px solid var(--border); min-width: 0; }
     .chip-icon { font-size: 11px; flex-shrink: 0; }
-    .chip-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .chip-text { font-size: 11px; color: var(--text-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* ── States (loading / empty / error) ── */
-    .state-view {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 40px 80px;
-      text-align: center;
-    }
-    .state-icon { font-size: 48px; margin-bottom: 16px; }
-    .state-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-    .state-text {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 28px;
-    }
-    .retry-btn {
-      padding: 12px 28px;
-      background: var(--orange);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity .15s, transform .1s;
-    }
+    /* ── States ── */
+    .state-view { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; text-align: center; min-height: 300px; }
+    .state-icon  { font-size: 48px; margin-bottom: 16px; }
+    .state-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+    .state-text  { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 28px; }
+    .retry-btn { padding: 12px 28px; background: var(--orange); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s, transform .1s; }
     .retry-btn:hover  { opacity: .9; }
     .retry-btn:active { transform: scale(.97); }
-
-    /* ── Spinner ── */
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid #fed7aa;
-      border-top-color: var(--orange);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      margin-bottom: 14px;
-    }
+    .spinner { width: 40px; height: 40px; border: 3px solid #fed7aa; border-top-color: var(--orange); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 14px; }
     .loading-text { font-size: 13px; color: var(--text-faint); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      #header { padding: 14px 16px 0; }
+      .header-top { flex-wrap: wrap; gap: 12px; padding-bottom: 12px; }
+      .dropdown-wrap { max-width: 100%; order: 3; flex-basis: 100%; }
+      #last-updated { display: none; }
+      #content { padding: 14px 12px 40px; }
+      #stats-bar { padding: 8px 16px; }
+      .tab { padding: 9px 12px; font-size: 12px; }
+    }
   </style>
 </head>
 <body>
+<div id="loading-bar"></div>
 <div id="app">
 
-  <!-- Header -->
   <div id="header">
     <div class="header-top">
-      <div>
+      <div class="header-brand">
         <div class="eyebrow">GYC · PRODUCCIÓN</div>
         <div class="title">Consultor de Bonos</div>
       </div>
-      <button id="refresh-btn" title="Actualizar">
-        <span class="refresh-icon">↺</span>
-      </button>
+
+      <div class="dropdown-wrap">
+        <button id="dropdown-btn">
+          <div class="dropdown-inner">
+            <div class="dropdown-label">MÁQUINA</div>
+            <div class="dropdown-value" id="dropdown-value">Todas las máquinas</div>
+          </div>
+          <span class="dropdown-arrow">▾</span>
+        </button>
+        <div id="dd-popover"></div>
+      </div>
+
+      <div class="header-right">
+        <span id="last-updated"></span>
+        <button id="refresh-btn" title="Actualizar">
+          <span class="refresh-icon">↺</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Dropdown trigger -->
-    <button id="dropdown-btn">
-      <div class="dropdown-inner">
-        <div class="dropdown-label">MÁQUINA</div>
-        <div class="dropdown-value" id="dropdown-value">Todas las máquinas</div>
-      </div>
-      <span class="dropdown-arrow">▾</span>
-    </button>
+    <!-- Filter tabs -->
+    <div id="filter-tabs">
+      <button class="tab" data-filter="1">
+        Activos <span class="tab-badge" id="badge-1">—</span>
+      </button>
+      <button class="tab" data-filter="0">
+        En espera <span class="tab-badge" id="badge-0">—</span>
+      </button>
+      <button class="tab" data-filter="all">
+        Total <span class="tab-badge" id="badge-all">—</span>
+      </button>
+    </div>
   </div>
 
-  <!-- Stats bar -->
   <div id="stats-bar">
-    <div class="stats-dot"></div>
-    <span class="stats-text" id="stats-text"></span>
+    <div class="stats-inner">
+      <div class="stats-dot"></div>
+      <span class="stats-text" id="stats-text"></span>
+    </div>
   </div>
 
-  <!-- Content -->
-  <div id="content"></div>
+  <div id="content">
+    <div class="content-inner" id="content-inner"></div>
+  </div>
 
 </div>
 
-<!-- Overlay / Bottom sheet -->
+<!-- Mobile sheet -->
 <div id="overlay">
   <div id="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">SELECCIONAR MÁQUINA</div>
-    <div id="options-list"></div>
+    <div id="sheet-options"></div>
   </div>
 </div>
 
@@ -483,22 +367,35 @@ const ESTADO = {
   2: { label: 'Finalizado', color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' },
 };
 
+// filter: '1' | '0' | 'all'
 let matriculas       = [];
-let selectedMat      = null;   // null = todas
+let selectedMat      = null;
+let selectedFilter   = '1';      // default: Activos
 let loadingMats      = true;
 let loadingBonos     = false;
+let hasContent       = false;
 let autoRefreshTimer = null;
+let counts           = { '0': null, '1': null, 'all': null };
 
-// ── DOM refs ──────────────────────────────────────────────────────────────────
-const $content      = document.getElementById('content');
+// ── DOM ───────────────────────────────────────────────────────────────────────
+const $inner        = document.getElementById('content-inner');
 const $statsBar     = document.getElementById('stats-bar');
 const $statsText    = document.getElementById('stats-text');
 const $dropdownBtn  = document.getElementById('dropdown-btn');
 const $dropdownVal  = document.getElementById('dropdown-value');
-const $dropdownArrow= $dropdownBtn.querySelector('.dropdown-arrow');
+const $ddPopover    = document.getElementById('dd-popover');
 const $overlay      = document.getElementById('overlay');
-const $optionsList  = document.getElementById('options-list');
+const $sheetOptions = document.getElementById('sheet-options');
 const $refreshBtn   = document.getElementById('refresh-btn');
+const $lastUpdated  = document.getElementById('last-updated');
+const $loadingBar   = document.getElementById('loading-bar');
+const $tabs         = document.querySelectorAll('.tab');
+
+const isMobile = () => window.innerWidth < 600;
+
+// ── Loading bar ───────────────────────────────────────────────────────────────
+function barStart() { $loadingBar.classList.remove('done'); $loadingBar.classList.add('active'); }
+function barDone()  { $loadingBar.classList.remove('active'); $loadingBar.classList.add('done'); setTimeout(() => $loadingBar.classList.remove('done'), 500); }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 async function fetchMatriculas() {
@@ -507,60 +404,103 @@ async function fetchMatriculas() {
   try {
     const r = await fetch(`${API}/matriculas`);
     if (!r.ok) throw new Error();
-    const d = await r.json();
-    matriculas = d.matriculas ?? [];
-  } catch {
-    /* keep empty — error shown by bonos state */
-  } finally {
-    loadingMats = false;
-    setDropdownLoading(false);
-    renderDropdownValue();
-  }
+    matriculas = (await r.json()).matriculas ?? [];
+  } catch {}
+  finally { loadingMats = false; setDropdownLoading(false); renderDropdownValue(); }
 }
 
 async function fetchBonos() {
   if (loadingBonos) return;
   loadingBonos = true;
   setRefreshSpinning(true);
-  renderContent({ state: 'loading' });
+  barStart();
+  if (!hasContent) renderContent({ state: 'loading' });
+
   try {
-    let url = `${API}/bonos?estado_bono=0&estado_orden=1`;
-    if (selectedMat) url += `&matricula=${encodeURIComponent(selectedMat)}`;
-    const r = await fetch(url);
-    if (!r.ok) throw new Error();
-    const d = await r.json();
-    renderContent({ state: 'ok', bonos: d.bonos ?? [] });
+    // fetch active filter + counts for all tabs in parallel
+    const bonosUrl  = buildUrl(selectedFilter);
+    const url0      = buildUrl('0');
+    const url1      = buildUrl('1');
+    const urlAll    = buildUrl('all');
+
+    const [rMain, r0, r1, rAll] = await Promise.all([
+      fetch(bonosUrl),
+      fetch(url0),
+      fetch(url1),
+      fetch(urlAll),
+    ]);
+
+    if (!rMain.ok) throw new Error();
+
+    const [dMain, d0, d1, dAll] = await Promise.all([
+      rMain.json(),
+      r0.ok ? r0.json() : { bonos: [] },
+      r1.ok ? r1.json() : { bonos: [] },
+      rAll.ok ? rAll.json() : { bonos: [] },
+    ]);
+
+    counts = {
+      '0':   (d0.bonos   ?? []).length,
+      '1':   (d1.bonos   ?? []).length,
+      'all': (dAll.bonos ?? []).length,
+    };
+    updateTabBadges();
+    renderContent({ state: 'ok', bonos: dMain.bonos ?? [] });
+    hasContent = true;
+    updateLastUpdated();
   } catch {
     renderContent({ state: 'error' });
+    hasContent = true;
   } finally {
     loadingBonos = false;
     setRefreshSpinning(false);
+    barDone();
     scheduleAutoRefresh();
   }
 }
 
-// ── Auto-refresh ──────────────────────────────────────────────────────────────
+function buildUrl(filter) {
+  let url = `${API}/bonos?estado_orden=1`;
+  if (filter !== 'all') url += `&estado_bono=${filter}`;
+  if (selectedMat) url += `&matricula=${encodeURIComponent(selectedMat)}`;
+  return url;
+}
+
 function scheduleAutoRefresh() {
   clearTimeout(autoRefreshTimer);
   autoRefreshTimer = setTimeout(fetchBonos, 60_000);
 }
 
-// ── Render helpers ────────────────────────────────────────────────────────────
+function updateLastUpdated() {
+  const n = new Date();
+  $lastUpdated.textContent = `Actualizado ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function updateTabBadges() {
+  ['0','1','all'].forEach(f => {
+    const el = document.getElementById(`badge-${f}`);
+    if (el) el.textContent = counts[f] ?? '—';
+  });
+}
+
+function setActiveTab(filter) {
+  selectedFilter = filter;
+  $tabs.forEach(t => t.classList.toggle('active', t.dataset.filter === filter));
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
 function setRefreshSpinning(on) {
   $refreshBtn.classList.toggle('spinning', on);
   $refreshBtn.classList.toggle('disabled', on);
 }
 
 function setDropdownLoading(on) {
-  const inner = $dropdownBtn.querySelector('.dropdown-inner');
-  let spinner = $dropdownBtn.querySelector('.dd-spinner');
-  if (on && !spinner) {
-    spinner = document.createElement('div');
-    spinner.className = 'dd-spinner';
-    $dropdownBtn.insertBefore(spinner, $dropdownBtn.querySelector('.dropdown-arrow'));
-  } else if (!on && spinner) {
-    spinner.remove();
-  }
+  let s = $dropdownBtn.querySelector('.dd-spinner');
+  if (on && !s) {
+    s = document.createElement('div'); s.className = 'dd-spinner';
+    $dropdownBtn.insertBefore(s, $dropdownBtn.querySelector('.dropdown-arrow'));
+  } else if (!on && s) s.remove();
 }
 
 function renderDropdownValue() {
@@ -576,78 +516,59 @@ function renderContent({ state, bonos }) {
   $statsBar.classList.remove('visible');
 
   if (state === 'loading') {
-    $content.innerHTML = `
-      <div class="state-view">
-        <div class="spinner"></div>
-        <span class="loading-text">Cargando bonos…</span>
-      </div>`;
+    $inner.innerHTML = `<div class="state-view"><div class="spinner"></div><span class="loading-text">Cargando bonos…</span></div>`;
     return;
   }
-
   if (state === 'error') {
-    $content.innerHTML = `
+    $inner.innerHTML = `
       <div class="state-view">
         <div class="state-icon">⚡</div>
         <div class="state-title">Sin conexión</div>
         <div class="state-text">No se puede alcanzar la red de empresa</div>
         <button class="retry-btn" id="retry-btn">Reintentar</button>
       </div>`;
-    document.getElementById('retry-btn')?.addEventListener('click', () => {
-      fetchMatriculas();
-      fetchBonos();
-    });
+    document.getElementById('retry-btn')?.addEventListener('click', () => { hasContent = false; fetchMatriculas(); fetchBonos(); });
     return;
   }
-
   if (bonos.length === 0) {
-    $content.innerHTML = `
+    const labels = { '1': 'No hay bonos activos', '0': 'No hay bonos en espera', 'all': 'No hay bonos' };
+    $inner.innerHTML = `
       <div class="state-view">
         <div class="state-icon">✓</div>
         <div class="state-title">Todo al día</div>
-        <div class="state-text">No hay bonos en espera para la selección actual</div>
+        <div class="state-text">${labels[selectedFilter] || 'No hay bonos'} para la selección actual</div>
       </div>`;
     return;
   }
 
-  // Stats bar
+  // Stats
   $statsBar.classList.add('visible');
-  const machine = selectedMat
-    ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}`
-    : '';
-  $statsText.innerHTML =
-    `<span class="stats-count">${bonos.length}</span> ` +
-    `${bonos.length === 1 ? 'bono en espera' : 'bonos en espera'}${machine}`;
+  const tabLabel  = { '1': 'activos', '0': 'en espera', 'all': 'en total' };
+  const machine   = selectedMat ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}` : '';
+  $statsText.innerHTML = `<span class="stats-count">${bonos.length}</span> ${bonos.length === 1 ? 'bono' : 'bonos'} ${tabLabel[selectedFilter] || ''}${machine}`;
 
-  // Cards
-  const list = document.createElement('div');
-  list.className = 'cards-list';
+  // Grid
+  const grid = document.createElement('div');
+  grid.className = 'cards-grid';
   bonos.forEach((b, i) => {
     const el = buildCard(b);
-    el.style.animationDelay = `${i * 40}ms`;
-    list.appendChild(el);
+    el.style.animationDelay = `${i * 30}ms`;
+    grid.appendChild(el);
   });
-  $content.innerHTML = '';
-  $content.appendChild(list);
+  $inner.innerHTML = '';
+  $inner.appendChild(grid);
 }
 
 function buildCard(b) {
   const estado = ESTADO[b.estado_bono] ?? ESTADO[0];
   const card = document.createElement('div');
   card.className = 'card';
-
   const hasSub = b.Matricula && b.descrip_matricula;
-
   card.innerHTML = `
     <div class="card-top">
-      <div class="card-ids">
-        <div class="orden-label">ORDEN</div>
-        <div class="orden-value">#${b.IdOrden}</div>
-      </div>
+      <div class="card-ids"><div class="orden-label">ORDEN</div><div class="orden-value">#${b.IdOrden}</div></div>
       <div class="card-divider"></div>
-      <div class="card-ids">
-        <div class="orden-label">BONO</div>
-        <div class="orden-value bono-value">${b.IdBono}</div>
-      </div>
+      <div class="card-ids"><div class="orden-label">BONO</div><div class="orden-value bono-value">${b.IdBono}</div></div>
       <div class="spacer"></div>
       <div class="badge" style="background:${estado.bg}">
         <div class="badge-dot" style="background:${estado.dot}"></div>
@@ -655,96 +576,97 @@ function buildCard(b) {
       </div>
     </div>
     <div class="divider-h"></div>
-    <div class="field-label">ARTÍCULO</div>
-    <div class="field-value">${esc(b.descrip_articulo || '—')}</div>
-    <div class="field-label" style="margin-top:12px">MÁQUINA</div>
-    <div class="field-value">${esc(b.descrip_matricula || b.Matricula || '—')}</div>
-    ${hasSub ? `<div class="field-sub">${esc(b.Matricula)}</div>` : ''}
+    <div class="card-body">
+      <div class="field-label">ARTÍCULO</div>
+      <div class="field-value">${esc(b.descrip_articulo || '—')}</div>
+      <div class="field-label mt">MÁQUINA</div>
+      <div class="field-value">${esc(b.descrip_matricula || b.Matricula || '—')}</div>
+      ${hasSub ? `<div class="field-sub">${esc(b.Matricula)}</div>` : ''}
+    </div>
     <div class="card-footer">
-      <div class="chip"><span class="chip-icon">📍</span><span class="chip-text">${esc(b.Area || '—')}</span></div>
-      <div class="chip"><span class="chip-icon">🏢</span><span class="chip-text">${esc(b.IdCliente || '—')}</span></div>
-      <div class="chip"><span class="chip-icon">👤</span><span class="chip-text">${esc(b.Usuario || '—')}</span></div>
+      <div class="chip"><span class="chip-icon">📍</span><span class="chip-text">${esc(b.Area||'—')}</span></div>
+      <div class="chip"><span class="chip-icon">🏢</span><span class="chip-text">${esc(b.IdCliente||'—')}</span></div>
+      <div class="chip"><span class="chip-icon">👤</span><span class="chip-text">${esc(b.Usuario||'—')}</span></div>
     </div>`;
   return card;
 }
 
-function esc(str) {
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Dropdown sheet ────────────────────────────────────────────────────────────
-function buildOptionsList() {
-  $optionsList.innerHTML = '';
-
-  const allOpt = makeOption('Todas las máquinas', null, selectedMat === null);
-  $optionsList.appendChild(allOpt);
-
-  matriculas.forEach(m => {
-    $optionsList.appendChild(
-      makeOption(m.Descrip || m.Matricula, m.Matricula, selectedMat === m.Matricula, m.Matricula)
-    );
-  });
-}
-
-function makeOption(label, value, active, sub) {
-  const el = document.createElement('div');
-  el.className = 'option' + (active ? ' active' : '');
-  el.innerHTML = `
-    <div class="option-left">
-      ${active ? '<div class="option-dot"></div>' : ''}
-      <div class="option-text">
-        <div class="option-name">${esc(label)}</div>
-        ${sub ? `<div class="option-sub">${esc(sub)}</div>` : ''}
+// ── Dropdown ──────────────────────────────────────────────────────────────────
+function buildOptions(container, closeCb) {
+  container.innerHTML = '';
+  const make = (label, value, active, sub) => {
+    const el = document.createElement('div');
+    el.className = 'option' + (active ? ' active' : '');
+    el.innerHTML = `
+      <div class="option-left">
+        ${active ? '<div class="option-dot"></div>' : ''}
+        <div class="option-text">
+          <div class="option-name">${esc(label)}</div>
+          ${sub ? `<div class="option-sub">${esc(sub)}</div>` : ''}
+        </div>
       </div>
-    </div>
-    ${active ? '<span class="option-check">✓</span>' : ''}`;
-  el.addEventListener('click', () => {
-    selectedMat = value;
-    renderDropdownValue();
-    closeSheet();
-    fetchBonos();
-  });
-  return el;
+      ${active ? '<span class="option-check">✓</span>' : ''}`;
+    el.addEventListener('click', () => {
+      selectedMat = value;
+      renderDropdownValue();
+      closeCb();
+      hasContent = false;
+      fetchBonos();
+    });
+    return el;
+  };
+  container.appendChild(make('Todas las máquinas', null, selectedMat === null));
+  matriculas.forEach(m => container.appendChild(make(m.Descrip || m.Matricula, m.Matricula, selectedMat === m.Matricula, m.Matricula)));
 }
 
-function openSheet() {
+function openDropdown() {
   if (loadingMats) return;
-  buildOptionsList();
-  $overlay.classList.remove('fade-out');
-  $overlay.classList.add('visible', 'fade-in');
+  if (isMobile()) {
+    buildOptions($sheetOptions, closeSheet);
+    $overlay.classList.remove('fade-out');
+    $overlay.classList.add('visible','fade-in');
+  } else {
+    buildOptions($ddPopover, closePopover);
+    $ddPopover.classList.add('open');
+  }
   $dropdownBtn.classList.add('open');
 }
 
+function closePopover() { $ddPopover.classList.remove('open'); $dropdownBtn.classList.remove('open'); }
 function closeSheet() {
   $overlay.classList.remove('fade-in');
   $overlay.classList.add('fade-out');
   $dropdownBtn.classList.remove('open');
-  setTimeout(() => $overlay.classList.remove('visible', 'fade-out'), 150);
+  setTimeout(() => $overlay.classList.remove('visible','fade-out'), 150);
 }
+function closeAll() { closePopover(); if ($overlay.classList.contains('visible')) closeSheet(); }
 
-// ── Event listeners ───────────────────────────────────────────────────────────
-$dropdownBtn.addEventListener('click', () => {
-  $overlay.classList.contains('visible') ? closeSheet() : openSheet();
+// ── Events ────────────────────────────────────────────────────────────────────
+$dropdownBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  ($ddPopover.classList.contains('open') || $overlay.classList.contains('visible')) ? closeAll() : openDropdown();
 });
-
-$overlay.addEventListener('click', e => {
-  if (e.target === $overlay) closeSheet();
-});
-
+document.addEventListener('click', e => { if (!$dropdownBtn.closest('.dropdown-wrap').contains(e.target)) closePopover(); });
+$overlay.addEventListener('click', e => { if (e.target === $overlay) closeSheet(); });
 $refreshBtn.addEventListener('click', () => fetchBonos());
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $overlay.classList.contains('visible')) closeSheet();
+$tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (tab.dataset.filter === selectedFilter) return;
+    setActiveTab(tab.dataset.filter);
+    hasContent = false;
+    fetchBonos();
+  });
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-(async () => {
-  await Promise.all([fetchMatriculas(), fetchBonos()]);
-})();
+setActiveTab('1');
+Promise.all([fetchMatriculas(), fetchBonos()]);
 </script>
 </body>
 </html>
