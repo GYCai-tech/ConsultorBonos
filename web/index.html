@@ -330,6 +330,50 @@
     .spinner { width: 40px; height: 40px; border: 3px solid #fed7aa; border-top-color: var(--orange); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 14px; }
     .loading-text { font-size: 13px; color: var(--text-faint); }
 
+    /* ── Dropdown search ── */
+    .dd-search-wrap {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border-light);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .dd-search-icon {
+      position: absolute;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      color: var(--text-faint);
+      pointer-events: none;
+    }
+    .dd-search-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px 8px 30px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    .dd-search-input::placeholder { color: var(--text-faint); }
+    .dd-search-input:focus { border-color: var(--orange); }
+    .dd-no-results { padding: 20px; text-align: center; color: var(--text-faint); font-size: 13px; }
+
+    #sheet-search {
+      padding: 10px 16px 6px;
+      border-bottom: 1px solid var(--border-light);
+      flex-shrink: 0;
+    }
+    #sheet-search .dd-search-wrap {
+      padding: 0;
+      border-bottom: none;
+    }
+    #sheet-search .dd-search-icon { left: 10px; }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       #header { padding: 14px 16px 0; }
@@ -368,7 +412,7 @@
       <!-- Search -->
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input id="search-input" type="text" placeholder="Buscar orden…" autocomplete="off" />
+        <input id="search-input" type="text" placeholder="Buscar orden o artículo…" autocomplete="off" />
         <button class="search-clear" id="search-clear" title="Limpiar">✕</button>
       </div>
 
@@ -415,6 +459,7 @@
   <div id="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">SELECCIONAR MÁQUINA</div>
+    <div id="sheet-search"></div>
     <div id="sheet-options"></div>
   </div>
 </div>
@@ -592,7 +637,10 @@ function applySearch() {
   if (!lastBonos.length) return;
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
-    ? lastBonos.filter(b => String(b.IdOrden).toLowerCase().includes(q) || String(b.IdBono).toLowerCase().includes(q))
+    ? lastBonos.filter(b =>
+        String(b.IdOrden).toLowerCase().includes(q) ||
+        String(b.IdBono).toLowerCase().includes(q) ||
+        String(b.descrip_articulo || '').toLowerCase().includes(q))
     : lastBonos;
   renderContent({ state: 'ok', bonos: filtered });
 }
@@ -630,7 +678,7 @@ function renderContent({ state, bonos }) {
   $statsBar.classList.add('visible');
   const tabLabel = { '1': 'activos', '0': 'en espera', 'all': 'en total', 'blocked': 'bloqueados' };
   const machine  = selectedMat ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}` : '';
-  const searchSuffix = searchQuery.trim() ? ` · orden "${searchQuery.trim()}"` : '';
+  const searchSuffix = searchQuery.trim() ? ` · "${searchQuery.trim()}"` : '';
   $statsText.innerHTML = `<span class="stats-count">${bonos.length}</span> ${bonos.length === 1 ? 'bono' : 'bonos'} ${tabLabel[selectedFilter] || ''}${machine}${searchSuffix}`;
 
   // Grid
@@ -682,41 +730,92 @@ function esc(s) {
 }
 
 // ── Dropdown ──────────────────────────────────────────────────────────────────
-function buildOptions(container, closeCb) {
-  container.innerHTML = '';
-  const make = (label, value, active, sub) => {
-    const el = document.createElement('div');
-    el.className = 'option' + (active ? ' active' : '');
-    el.innerHTML = `
-      <div class="option-left">
-        ${active ? '<div class="option-dot"></div>' : ''}
-        <div class="option-text">
-          <div class="option-name">${esc(label)}</div>
-          ${sub ? `<div class="option-sub">${esc(sub)}</div>` : ''}
+const sortedMats = () => [...matriculas].sort((a, b) =>
+  (a.Descrip || a.Matricula).localeCompare(b.Descrip || b.Matricula, 'es', { sensitivity: 'base' })
+);
+
+function buildOptions(optsCont, closeCb, searchCont) {
+  optsCont.innerHTML = '';
+
+  // Build search input
+  const searchWrap = document.createElement('div');
+  searchWrap.className = 'dd-search-wrap';
+  searchWrap.innerHTML = `
+    <span class="dd-search-icon">🔍</span>
+    <input class="dd-search-input" type="text" placeholder="Buscar máquina…" autocomplete="off" />`;
+
+  if (searchCont) {
+    searchCont.innerHTML = '';
+    searchCont.appendChild(searchWrap);
+  } else {
+    optsCont.appendChild(searchWrap);
+  }
+
+  const optsList = document.createElement('div');
+  optsCont.appendChild(optsList);
+
+  function renderOpts(query) {
+    optsList.innerHTML = '';
+    const q = query.trim().toLowerCase();
+    const mats = sortedMats();
+    const filtered = q
+      ? mats.filter(m =>
+          (m.Descrip || '').toLowerCase().includes(q) ||
+          (m.Matricula || '').toLowerCase().includes(q))
+      : mats;
+
+    const makeOpt = (label, value, active, sub) => {
+      const el = document.createElement('div');
+      el.className = 'option' + (active ? ' active' : '');
+      el.innerHTML = `
+        <div class="option-left">
+          ${active ? '<div class="option-dot"></div>' : ''}
+          <div class="option-text">
+            <div class="option-name">${esc(label)}</div>
+            ${sub ? `<div class="option-sub">${esc(sub)}</div>` : ''}
+          </div>
         </div>
-      </div>
-      ${active ? '<span class="option-check">✓</span>' : ''}`;
-    el.addEventListener('click', () => {
-      selectedMat = value;
-      renderDropdownValue();
-      closeCb();
-      hasContent = false;
-      fetchBonos();
-    });
-    return el;
-  };
-  container.appendChild(make('Todas las máquinas', null, selectedMat === null));
-  matriculas.forEach(m => container.appendChild(make(m.Descrip || m.Matricula, m.Matricula, selectedMat === m.Matricula, m.Matricula)));
+        ${active ? '<span class="option-check">✓</span>' : ''}`;
+      el.addEventListener('click', () => {
+        selectedMat = value;
+        renderDropdownValue();
+        closeCb();
+        hasContent = false;
+        fetchBonos();
+      });
+      return el;
+    };
+
+    if (!q) optsList.appendChild(makeOpt('Todas las máquinas', null, selectedMat === null));
+
+    filtered.forEach(m =>
+      optsList.appendChild(makeOpt(m.Descrip || m.Matricula, m.Matricula, selectedMat === m.Matricula, m.Matricula))
+    );
+
+    if (q && filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'dd-no-results';
+      empty.textContent = 'Sin resultados';
+      optsList.appendChild(empty);
+    }
+  }
+
+  renderOpts('');
+
+  const input = searchWrap.querySelector('.dd-search-input');
+  input.addEventListener('input', () => renderOpts(input.value));
+  setTimeout(() => input.focus(), 60);
 }
 
 function openDropdown() {
   if (loadingMats) return;
+  const $sheetSearch = document.getElementById('sheet-search');
   if (isMobile()) {
-    buildOptions($sheetOptions, closeSheet);
+    buildOptions($sheetOptions, closeSheet, $sheetSearch);
     $overlay.classList.remove('fade-out');
     $overlay.classList.add('visible','fade-in');
   } else {
-    buildOptions($ddPopover, closePopover);
+    buildOptions($ddPopover, closePopover, null);
     $ddPopover.classList.add('open');
   }
   $dropdownBtn.classList.add('open');
@@ -727,6 +826,7 @@ function closeSheet() {
   $overlay.classList.remove('fade-in');
   $overlay.classList.add('fade-out');
   $dropdownBtn.classList.remove('open');
+  document.getElementById('sheet-search').innerHTML = '';
   setTimeout(() => $overlay.classList.remove('visible','fade-out'), 150);
 }
 function closeAll() { closePopover(); if ($overlay.classList.contains('visible')) closeSheet(); }
