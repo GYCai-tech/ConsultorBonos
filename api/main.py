@@ -49,8 +49,8 @@ FROM Ordenes_Bonos_Salidas obs
                                AND obs.IdBono   = ob.IdBono
     JOIN Articulos a_salida     ON obs.IdArticulo  = a_salida.IdArticulo
     JOIN Articulos a_matricula  ON ob.Matricula    = a_matricula.IdArticulo
-WHERE ob.IdEstado = :estado_bono
-  AND o.IdEstado  = :estado_orden
+WHERE o.IdEstado  = :estado_orden
+  {filtro_bono}
   {filtro_matricula}
 ORDER BY o.IdOrden DESC
 """
@@ -63,12 +63,15 @@ def _row_to_dict(row):
 @app.get("/bonos")
 def get_bonos(
     matricula:    str | None = Query(None,  description="Matrícula de máquina (opcional)"),
-    estado_bono:  int        = Query(0,     description="Estado del bono (0=Espera, 1=Activo, 2=Finalizado)"),
-    estado_orden: int        = Query(1,     description="Estado de la orden (1=Activado)"),
+    estado_bono:  int | None = Query(None,  description="Estado del bono (0=Espera, 1=Activo, 2=Finalizado). Omitir para todos."),
+    estado_orden: int        = Query(1,     description="Estado de la orden (1=Activa, 3=Bloqueada)"),
 ):
-    filtro_matricula = "AND ob.Matricula = :matricula" if matricula else ""
-    query = QUERY.format(filtro_matricula=filtro_matricula)
-    params = {"estado_bono": estado_bono, "estado_orden": estado_orden}
+    filtro_bono      = "AND ob.IdEstado = :estado_bono" if estado_bono is not None else ""
+    filtro_matricula = "AND ob.Matricula = :matricula"  if matricula else ""
+    query = QUERY.format(filtro_bono=filtro_bono, filtro_matricula=filtro_matricula)
+    params = {"estado_orden": estado_orden}
+    if estado_bono is not None:
+        params["estado_bono"] = estado_bono
     if matricula:
         params["matricula"] = matricula
 
@@ -84,14 +87,13 @@ def get_bonos(
 
 @app.get("/matriculas")
 def get_matriculas():
-    """Devuelve las matrículas distintas que tienen bonos en estado Espera con orden Activa."""
+    """Devuelve las matrículas distintas que tienen bonos en órdenes activas o bloqueadas."""
     query = """
         SELECT DISTINCT ob.Matricula, a.Descrip
         FROM Ordenes_Bonos ob
             JOIN Ordenes o          ON ob.IdOrden   = o.IdOrden
             JOIN Articulos a        ON ob.Matricula = a.IdArticulo
-        WHERE ob.IdEstado = 0
-          AND o.IdEstado  = 1
+        WHERE o.IdEstado IN (1, 3)
         ORDER BY ob.Matricula
     """
     try:

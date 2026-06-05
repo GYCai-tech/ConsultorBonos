@@ -227,6 +227,9 @@
     }
     .tab:hover { color: var(--text-muted); }
     .tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .tab-blocked:hover { color: #dc2626; }
+    .tab-blocked.active { color: #dc2626; border-bottom-color: #dc2626; }
+    .tab-blocked.active .tab-badge { background: #fee2e2; color: #dc2626; }
     .tab-badge {
       font-size: 11px;
       font-weight: 700;
@@ -388,6 +391,9 @@
       <button class="tab" data-filter="all">
         Total <span class="tab-badge" id="badge-all">—</span>
       </button>
+      <button class="tab tab-blocked" data-filter="blocked">
+        Bloqueadas <span class="tab-badge" id="badge-blocked">—</span>
+      </button>
     </div>
   </div>
 
@@ -422,7 +428,7 @@ const ESTADO = {
   2: { label: 'Finalizado', color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' },
 };
 
-// filter: '1' | '0' | 'all'
+// filter: '1' | '0' | 'all' | 'blocked'
 let matriculas       = [];
 let selectedMat      = null;
 let selectedFilter   = '1';      // default: Activos
@@ -431,7 +437,7 @@ let loadingMats      = true;
 let loadingBonos     = false;
 let hasContent       = false;
 let autoRefreshTimer = null;
-let counts           = { '0': null, '1': null, 'all': null };
+let counts           = { '0': null, '1': null, 'all': null, 'blocked': null };
 let lastBonos        = [];
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
@@ -477,31 +483,35 @@ async function fetchBonos() {
 
   try {
     // fetch active filter + counts for all tabs in parallel
-    const bonosUrl  = buildUrl(selectedFilter);
-    const url0      = buildUrl('0');
-    const url1      = buildUrl('1');
-    const urlAll    = buildUrl('all');
+    const bonosUrl   = buildUrl(selectedFilter);
+    const url0       = buildUrl('0');
+    const url1       = buildUrl('1');
+    const urlAll     = buildUrl('all');
+    const urlBlocked = buildUrl('blocked');
 
-    const [rMain, r0, r1, rAll] = await Promise.all([
+    const [rMain, r0, r1, rAll, rBlocked] = await Promise.all([
       fetch(bonosUrl),
       fetch(url0),
       fetch(url1),
       fetch(urlAll),
+      fetch(urlBlocked),
     ]);
 
     if (!rMain.ok) throw new Error();
 
-    const [dMain, d0, d1, dAll] = await Promise.all([
+    const [dMain, d0, d1, dAll, dBlocked] = await Promise.all([
       rMain.json(),
-      r0.ok ? r0.json() : { bonos: [] },
-      r1.ok ? r1.json() : { bonos: [] },
-      rAll.ok ? rAll.json() : { bonos: [] },
+      r0.ok      ? r0.json()      : { bonos: [] },
+      r1.ok      ? r1.json()      : { bonos: [] },
+      rAll.ok    ? rAll.json()    : { bonos: [] },
+      rBlocked.ok ? rBlocked.json() : { bonos: [] },
     ]);
 
     counts = {
-      '0':   (d0.bonos   ?? []).length,
-      '1':   (d1.bonos   ?? []).length,
-      'all': (dAll.bonos ?? []).length,
+      '0':       (d0.bonos      ?? []).length,
+      '1':       (d1.bonos      ?? []).length,
+      'all':     (dAll.bonos    ?? []).length,
+      'blocked': (dBlocked.bonos ?? []).length,
     };
     updateTabBadges();
     lastBonos = dMain.bonos ?? [];
@@ -520,6 +530,12 @@ async function fetchBonos() {
 }
 
 function buildUrl(filter) {
+  if (filter === 'blocked') {
+    // estado_orden=3 (bloqueada), sin filtro de estado_bono → todos los bonos
+    let url = `${API}/bonos?estado_orden=3`;
+    if (selectedMat) url += `&matricula=${encodeURIComponent(selectedMat)}`;
+    return url;
+  }
   let url = `${API}/bonos?estado_orden=1`;
   if (filter !== 'all') url += `&estado_bono=${filter}`;
   if (selectedMat) url += `&matricula=${encodeURIComponent(selectedMat)}`;
@@ -538,7 +554,7 @@ function updateLastUpdated() {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function updateTabBadges() {
-  ['0','1','all'].forEach(f => {
+  ['0','1','all','blocked'].forEach(f => {
     const el = document.getElementById(`badge-${f}`);
     if (el) el.textContent = counts[f] ?? '—';
   });
@@ -600,7 +616,7 @@ function renderContent({ state, bonos }) {
     return;
   }
   if (bonos.length === 0) {
-    const labels = { '1': 'No hay bonos activos', '0': 'No hay bonos en espera', 'all': 'No hay bonos' };
+    const labels = { '1': 'No hay bonos activos', '0': 'No hay bonos en espera', 'all': 'No hay bonos', 'blocked': 'No hay órdenes bloqueadas' };
     $inner.innerHTML = `
       <div class="state-view">
         <div class="state-icon">✓</div>
@@ -612,7 +628,7 @@ function renderContent({ state, bonos }) {
 
   // Stats
   $statsBar.classList.add('visible');
-  const tabLabel = { '1': 'activos', '0': 'en espera', 'all': 'en total' };
+  const tabLabel = { '1': 'activos', '0': 'en espera', 'all': 'en total', 'blocked': 'bloqueados' };
   const machine  = selectedMat ? ` · ${matriculas.find(m => m.Matricula === selectedMat)?.Descrip || selectedMat}` : '';
   const searchSuffix = searchQuery.trim() ? ` · orden "${searchQuery.trim()}"` : '';
   $statsText.innerHTML = `<span class="stats-count">${bonos.length}</span> ${bonos.length === 1 ? 'bono' : 'bonos'} ${tabLabel[selectedFilter] || ''}${machine}${searchSuffix}`;
