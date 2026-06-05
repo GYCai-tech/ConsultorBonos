@@ -23,10 +23,12 @@ const ESTADO_CONFIG = {
   3: { label: 'Bloqueado',  color: '#dc2626', bg: '#fee2e2', dot: '#ef4444' },
 };
 
+// estadoBono filtra ob.IdEstado; estadoOrden filtra o.IdEstado
+// Bloqueadas = órdenes con o.IdEstado=3 (sin filtro de bono)
 const TABS = [
-  { key: 'espera',    label: 'En espera',  estadoBono: '0' },
-  { key: 'bloqueado', label: 'Bloqueadas', estadoBono: '3' },
-  { key: 'todas',     label: 'Todas',      estadoBono: null },
+  { key: 'espera',    label: 'En espera',  estadoOrden: 1, estadoBono: '0'  },
+  { key: 'bloqueado', label: 'Bloqueadas', estadoOrden: 3, estadoBono: null },
+  { key: 'todas',     label: 'Todas',      estadoOrden: 1, estadoBono: null },
 ];
 
 // ─── Dropdown ─────────────────────────────────────────────────────────────────
@@ -212,8 +214,8 @@ export default function App() {
     setError(null);
     try {
       const tab = TABS.find(t => t.key === activeTab);
-      let url = `${API_BASE_URL}/bonos?estado_orden=1`;
-      if (tab?.estadoBono !== null) url += `&estado_bono=${tab.estadoBono}`;
+      let url = `${API_BASE_URL}/bonos?estado_orden=${tab.estadoOrden}`;
+      if (tab.estadoBono !== null) url += `&estado_bono=${tab.estadoBono}`;
       if (selectedMatricula) url += `&matricula=${encodeURIComponent(selectedMatricula)}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error();
