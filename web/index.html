@@ -128,8 +128,9 @@
       transition: background .1s;
     }
     .option:last-child { border-bottom: none; }
-    .option:hover  { background: #fafafa; }
-    .option.active { background: var(--orange-light); }
+    .option:hover   { background: #fafafa; }
+    .option.active  { background: var(--orange-light); }
+    .option.focused { background: #f1f5f9; }
     .option-left   { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
     .option-dot    { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
     .option-text   { min-width: 0; }
@@ -482,6 +483,7 @@ const ESTADO = {
 // filter: '1' | '0' | 'all' | 'blocked'
 let matriculas       = [];
 let selectedMat      = null;
+let focusedOptIdx    = -1;
 let selectedFilter   = '1';      // default: Activos
 let searchQuery      = '';
 let loadingMats      = true;
@@ -641,6 +643,7 @@ function renderDropdownValue() {
 
 function renderPopoverOpts(query) {
   $ddPopover.innerHTML = '';
+  focusedOptIdx = -1;
   const q = (query || '').trim().toLowerCase();
   const mats = sortedMats();
   const filtered = q
@@ -876,7 +879,7 @@ function openDropdown() {
   }
 }
 
-function closePopover() { $ddPopover.classList.remove('open'); $dropdownBtn.classList.remove('open'); }
+function closePopover() { $ddPopover.classList.remove('open'); $dropdownBtn.classList.remove('open'); focusedOptIdx = -1; }
 function closeSheet() {
   $overlay.classList.remove('fade-in');
   $overlay.classList.add('fade-out');
@@ -886,7 +889,41 @@ function closeSheet() {
 }
 function closeAll() { closePopover(); if ($overlay.classList.contains('visible')) closeSheet(); }
 
+// ── Keyboard nav helpers ──────────────────────────────────────────────────────
+function getPopoverOpts() { return Array.from($ddPopover.querySelectorAll('.option')); }
+
+function setFocusedOpt(idx) {
+  const opts = getPopoverOpts();
+  opts.forEach(o => o.classList.remove('focused'));
+  focusedOptIdx = Math.max(0, Math.min(idx, opts.length - 1));
+  if (opts[focusedOptIdx]) {
+    opts[focusedOptIdx].classList.add('focused');
+    opts[focusedOptIdx].scrollIntoView({ block: 'nearest' });
+  }
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
+$dropdownBtn.addEventListener('click', e => {
+  if (e.target === $dropdownInput || e.target === $dropdownArrow) return;
+  if ($ddPopover.classList.contains('open')) { closePopover(); $dropdownInput.blur(); }
+  else $dropdownInput.focus();
+});
+
+$dropdownInput.addEventListener('keydown', e => {
+  if (!$ddPopover.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setFocusedOpt(focusedOptIdx < 0 ? 0 : focusedOptIdx + 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setFocusedOpt(focusedOptIdx <= 0 ? 0 : focusedOptIdx - 1);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const opts = getPopoverOpts();
+    if (focusedOptIdx >= 0 && opts[focusedOptIdx]) opts[focusedOptIdx].click();
+  }
+});
+
 $dropdownInput.addEventListener('focus', () => {
   if (loadingMats) return;
   if (isMobile()) {
