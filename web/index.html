@@ -89,8 +89,13 @@
     #dropdown-btn.open  { border-color: var(--orange); }
     .dropdown-inner { flex: 1; min-width: 0; }
     .dropdown-label { font-size: 9px; font-weight: 700; color: var(--text-faint); letter-spacing: 1.5px; margin-bottom: 1px; }
-    .dropdown-value { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .dropdown-arrow { font-size: 16px; color: var(--text-faint); margin-left: 8px; transition: transform .2s; flex-shrink: 0; }
+    .dropdown-input {
+      background: transparent; border: none; outline: none;
+      font-size: 14px; font-weight: 600; color: var(--text);
+      font-family: inherit; padding: 0; width: 100%; min-width: 0;
+    }
+    .dropdown-input::placeholder { color: var(--text-faint); font-weight: 600; }
+    .dropdown-arrow { font-size: 16px; color: var(--text-faint); margin-left: 8px; transition: transform .2s; flex-shrink: 0; cursor: pointer; }
     #dropdown-btn.open .dropdown-arrow { transform: rotate(180deg); }
 
     .dd-spinner { width: 16px; height: 16px; border: 2px solid #fed7aa; border-top-color: var(--orange); border-radius: 50%; animation: spin .6s linear infinite; margin-right: 4px; }
@@ -399,13 +404,13 @@
       </div>
 
       <div class="dropdown-wrap">
-        <button id="dropdown-btn">
+        <div id="dropdown-btn">
           <div class="dropdown-inner">
             <div class="dropdown-label">MÁQUINA</div>
-            <div class="dropdown-value" id="dropdown-value">Todas las máquinas</div>
+            <input id="dropdown-input" type="text" class="dropdown-input" placeholder="Todas las máquinas" autocomplete="off" spellcheck="false" />
           </div>
-          <span class="dropdown-arrow">▾</span>
-        </button>
+          <span class="dropdown-arrow" id="dropdown-arrow">▾</span>
+        </div>
         <div id="dd-popover"></div>
       </div>
 
@@ -490,9 +495,10 @@ let lastBonos        = [];
 const $inner        = document.getElementById('content-inner');
 const $statsBar     = document.getElementById('stats-bar');
 const $statsText    = document.getElementById('stats-text');
-const $dropdownBtn  = document.getElementById('dropdown-btn');
-const $dropdownVal  = document.getElementById('dropdown-value');
-const $ddPopover    = document.getElementById('dd-popover');
+const $dropdownBtn   = document.getElementById('dropdown-btn');
+const $dropdownInput = document.getElementById('dropdown-input');
+const $dropdownArrow = document.getElementById('dropdown-arrow');
+const $ddPopover     = document.getElementById('dd-popover');
 const $overlay      = document.getElementById('overlay');
 const $sheetOptions = document.getElementById('sheet-options');
 const $refreshBtn   = document.getElementById('refresh-btn');
@@ -627,9 +633,55 @@ function setDropdownLoading(on) {
 function renderDropdownValue() {
   if (selectedMat) {
     const m = matriculas.find(x => x.Matricula === selectedMat);
-    $dropdownVal.textContent = m?.Descrip || selectedMat;
+    $dropdownInput.value = (m?.Descrip || selectedMat).trim();
   } else {
-    $dropdownVal.textContent = 'Todas las máquinas';
+    $dropdownInput.value = '';
+  }
+}
+
+function renderPopoverOpts(query) {
+  $ddPopover.innerHTML = '';
+  const q = (query || '').trim().toLowerCase();
+  const mats = sortedMats();
+  const filtered = q
+    ? mats.filter(m =>
+        (m.Descrip || '').toLowerCase().includes(q) ||
+        (m.Matricula || '').toLowerCase().includes(q))
+    : mats;
+
+  const makeOpt = (label, value, active, sub) => {
+    const el = document.createElement('div');
+    el.className = 'option' + (active ? ' active' : '');
+    el.innerHTML = `
+      <div class="option-left">
+        ${active ? '<div class="option-dot"></div>' : ''}
+        <div class="option-text">
+          <div class="option-name">${esc(label)}</div>
+          ${sub ? `<div class="option-sub">${esc(sub)}</div>` : ''}
+        </div>
+      </div>
+      ${active ? '<span class="option-check">✓</span>' : ''}`;
+    el.addEventListener('mousedown', e => e.preventDefault());
+    el.addEventListener('click', () => {
+      selectedMat = value;
+      renderDropdownValue();
+      closePopover();
+      hasContent = false;
+      fetchBonos();
+    });
+    return el;
+  };
+
+  if (!q) $ddPopover.appendChild(makeOpt('Todas las máquinas', null, selectedMat === null));
+  filtered.forEach(m =>
+    $ddPopover.appendChild(makeOpt((m.Descrip || m.Matricula).trim(), m.Matricula, selectedMat === m.Matricula, m.Matricula))
+  );
+
+  if (q && filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'dd-no-results';
+    empty.textContent = 'Sin resultados';
+    $ddPopover.appendChild(empty);
   }
 }
 
@@ -731,7 +783,7 @@ function esc(s) {
 
 // ── Dropdown ──────────────────────────────────────────────────────────────────
 const sortedMats = () => [...matriculas].sort((a, b) =>
-  (a.Descrip || a.Matricula).localeCompare(b.Descrip || b.Matricula, 'es', { sensitivity: 'base' })
+  (a.Descrip || a.Matricula).trim().localeCompare((b.Descrip || b.Matricula).trim(), 'es', { sensitivity: 'base' })
 );
 
 function buildOptions(optsCont, closeCb, searchCont) {
@@ -809,16 +861,19 @@ function buildOptions(optsCont, closeCb, searchCont) {
 
 function openDropdown() {
   if (loadingMats) return;
-  const $sheetSearch = document.getElementById('sheet-search');
   if (isMobile()) {
+    const $sheetSearch = document.getElementById('sheet-search');
     buildOptions($sheetOptions, closeSheet, $sheetSearch);
     $overlay.classList.remove('fade-out');
     $overlay.classList.add('visible','fade-in');
+    $dropdownBtn.classList.add('open');
   } else {
-    buildOptions($ddPopover, closePopover, null);
+    renderPopoverOpts('');
     $ddPopover.classList.add('open');
+    $dropdownBtn.classList.add('open');
+    $dropdownInput.focus();
+    $dropdownInput.select();
   }
-  $dropdownBtn.classList.add('open');
 }
 
 function closePopover() { $ddPopover.classList.remove('open'); $dropdownBtn.classList.remove('open'); }
@@ -832,14 +887,62 @@ function closeSheet() {
 function closeAll() { closePopover(); if ($overlay.classList.contains('visible')) closeSheet(); }
 
 // ── Events ────────────────────────────────────────────────────────────────────
-$dropdownBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  ($ddPopover.classList.contains('open') || $overlay.classList.contains('visible')) ? closeAll() : openDropdown();
+$dropdownInput.addEventListener('focus', () => {
+  if (loadingMats) return;
+  if (isMobile()) {
+    $dropdownInput.blur();
+    openDropdown();
+    return;
+  }
+  renderPopoverOpts('');
+  $ddPopover.classList.add('open');
+  $dropdownBtn.classList.add('open');
+  $dropdownInput.select();
 });
+
+$dropdownInput.addEventListener('input', () => {
+  if (isMobile()) return;
+  if (!$ddPopover.classList.contains('open')) {
+    $ddPopover.classList.add('open');
+    $dropdownBtn.classList.add('open');
+  }
+  renderPopoverOpts($dropdownInput.value);
+});
+
+$dropdownInput.addEventListener('blur', () => {
+  setTimeout(() => {
+    if ($ddPopover.classList.contains('open')) {
+      renderDropdownValue();
+      closePopover();
+    }
+  }, 150);
+});
+
+$dropdownArrow.addEventListener('click', e => {
+  e.stopPropagation();
+  if (isMobile()) {
+    $overlay.classList.contains('visible') ? closeSheet() : openDropdown();
+    return;
+  }
+  if ($ddPopover.classList.contains('open')) {
+    closePopover();
+    $dropdownInput.blur();
+  } else {
+    if (loadingMats) return;
+    renderPopoverOpts('');
+    $ddPopover.classList.add('open');
+    $dropdownBtn.classList.add('open');
+    $dropdownInput.focus();
+    $dropdownInput.select();
+  }
+});
+
 document.addEventListener('click', e => { if (!$dropdownBtn.closest('.dropdown-wrap').contains(e.target)) closePopover(); });
 $overlay.addEventListener('click', e => { if (e.target === $overlay) closeSheet(); });
 $refreshBtn.addEventListener('click', () => fetchBonos());
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeAll(); renderDropdownValue(); $dropdownInput.blur(); }
+});
 
 $tabs.forEach(tab => {
   tab.addEventListener('click', () => {
